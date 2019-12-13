@@ -1,99 +1,104 @@
-
 pipeline {
 
-  agent none
-
-  environment {
-
-    DOCKERHUBNAME = "docker-hub"
-
-  }
+  agent any
 
   stages {
 
     stage('Build') {
 
-      agent {
-
-        docker {
-
-          image 'node' 
-
-          args '-p 3000:3000'
-
-        }
-
-      }
-
       steps {
 
-        echo 'start npm install...'
+        echo 'build finished'
 
-        sh 'npm install'
+        bat 'mvn clean'
 
-        echo 'start npm build...'
+        echo 'maven clean successfully...'
 
-        sh 'npm run-script build'
+        bat 'mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V'
 
-        echo 'npm install and build successfully!'
+        echo 'maven install successfully...'
+
+        bat 'mvn package'
+
+        echo 'maven package successfully...'
 
       }
 
     }
 
-
-
-    stage('docker build & push & run') {
-
-      agent any
+    stage('Build Docker Image') {
 
       steps {
 
-        script {
+        echo "Starting building..."
 
-          def REMOVE_FLAG = sh(returnStdout: true, script: "docker image ls -q *${DOCKERHUBNAME}/smcui*") != ""
+        // bat 'cd C:\\Users\\RUITINGWANG\\.jenkins\\workspace\\erueka_master\\target'
 
-          echo "REMOVE_FLAG: ${REMOVE_FLAG}"
+        // bat 'dir'
 
-          if(REMOVE_FLAG){
+        // bat 'copy "C:\\Users\\RUITINGWANG\\.jenkins\\workspace\\erueka_master\\target\\eureka-server-1.0-SNAPSHOT.jar" "C:\\Jenkinstest"'
 
-            sh 'docker image rm -f $(docker image ls -q *${DOCKERHUBNAME}/smcui*)'
+        // bat 'copy "C:\\Users\\RUITINGWANG\\.jenkins\\workspace\\erueka_master\\target\\eureka-server-1.0-SNAPSHOT.jar" "C:\\jenkinsdocker"'
 
-          }
+        // echo 'copy jar successfully!'
 
-        }
+        // bat 'java -jar C:\\Jenkinstest\\eureka-server-1.0-SNAPSHOT.jar'
+
+        // echo 'start jar successfully!!!'
 
 
+
+        // bat 'docker build -f C:\\Users\\RUITINGWANG\\Desktop\\fullstack-smcfe\\Dockerfile -t eureka C:\\Users\\RUITINGWANG\\Desktop\\fullstack-eurekaserver\\target'
+
+        // bat 'docker images'
+
+        // bat 'docker run -d -p 9999:4200 smcfe'  
+
+        // bat 'docker ps' 
 
         withCredentials([usernamePassword(credentialsId: 'docker-hub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
 
-          sh 'docker login -u $USERNAME -p $PASSWORD'
+          echo '$USERNAME + %USERNAME%'
 
-          sh 'docker image build -t ${DOCKERHUBNAME}/smcui .'
+          echo '$PASSWORD + %PASSWORD%'
 
-          sh 'docker push ${DOCKERHUBNAME}/smcui'
+          // bat 'docker login -u $USERNAME -p $PASSWORD'
 
-          sh 'docker run -d -p 4200:80 --network smc-net --name smcui ${DOCKERHUBNAME}/smcui'
+          bat 'docker login -u %USERNAME% -p %PASSWORD%'
 
-        }
+          bat 'docker image build -f C:\\Users\\RUITINGWANG\\Desktop\\fullstack-smcfe\\Dockerfile -t yunduandenirtw/smcfe:jenkinsbuild C:\\Users\\RUITINGWANG\\Desktop\\fullstack-smcfe\\target'
+
+          bat 'docker push yunduandenirtw/smcfe:jenkinsbuild'
+
+        }   
 
       }
 
     }
 
+  }
+
+  post {
+
+    always {
+
+      echo 'build and deploy finished'
+
+    }
 
 
-    stage('clean workspace') {
 
-      agent any
+    failure {
 
-      steps {
+      echo 'build failed'
 
-        // clean workspace after job finished
+    }
 
-        cleanWs()
 
-      }
+
+    success {
+
+      echo 'deploy successfully'
 
     }
 
